@@ -1,0 +1,133 @@
+#https://www.science.smith.edu/~jcrouser/SDS293/labs/lab10-py.html
+#https://www.kirenz.com/post/2019-08-12-python-lasso-regression-auto/
+#https://machinelearningmastery.com/elastic-net-regression-in-python/
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.linear_model import Ridge, RidgeCV, Lasso, LassoCV, ElasticNet, ElasticNetCV, Lars, LarsCV 
+from sklearn.metrics import mean_squared_error
+
+#importing data, assigning testing/training 
+data = pd.read_csv(r"C:\Users\rehak\Desktop\QSARRegressionDataFinal(1).csv")
+
+train = data[data['Set']== 'Train']
+test = data[data['Set']== 'Test']
+
+xtest= test[test.columns[5:27]]
+ytest = test.loc[:,'logBCF']
+
+xtrain= train[train.columns[5:27]]
+ytrain= train.loc[:,'logBCF']
+
+xdata = data[test.columns[5:27]]
+ydata = data.loc[:,'logBCF']
+
+#create many alpha values between 5e-3 and 5e+3
+alphas = 10**np.linspace(4,-2,2000)*0.5
+print(alphas)  
+
+
+
+#Ridge
+
+#cross-validate to find the best-fitting alpha out of those in the array (based on the lowest MSE), using the train data
+ridgecv = RidgeCV(alphas = alphas, scoring = 'neg_mean_squared_error', normalize = True)
+ridgecv.fit(xtrain, ytrain) 
+a_r = ridgecv.alpha_  #best fitting alpha
+
+
+#use the best fitting alpha on the test data
+ridge = Ridge(alpha = a_r, normalize = True)
+ridge.fit(xtest, ytest) #fit the test data
+mse_r = mean_squared_error(ytest, ridge.predict(xtest))
+rmse_r = mse_r**0.5
+r2_r = ridge.score(xtest, ytest)
+
+print("Best-fitting alpha for Ridge=", a_r, "     Ridge R^2 = ", r2_r, "    Ridge MSE = ", mse_r,   "    Ridge RMSE = ", rmse_r )
+
+#plotting
+x_ax = range(len(xtest))
+plt.scatter(x_ax, ytest, s=5, color="blue", label="original")
+plt.plot(x_ax, ridge.predict(xtest), lw=0.8, color="red", label="predicted (Ridge)")
+plt.legend()
+plt.show()
+
+
+
+
+#Lasso
+
+#cross-validate to find the best-fitting alpha, using the train data
+lassocv = LassoCV(cv = 10, max_iter = 10000, normalize = True)
+lassocv.fit(xtrain, ytrain)
+a_l = lassocv.alpha_  #best fitting alpha
+
+
+#use the best fitting alpha on the test data
+lasso = Lasso(alpha = a_l, normalize = True)
+lasso.fit(xtest, ytest) #fit the test data
+mse_l = mean_squared_error(ytest, lasso.predict(xtest))
+rmse_l = mse_l**0.5
+r2_l = lasso.score(xtest, ytest)
+
+print("Best-fitting alpha for Lasso=", a_l, "     Lasso R^2 = ", r2_l, "    Lasso MSE = ", mse_l,   "    Lasso RMSE = ", rmse_l )
+
+#Plotiing
+x_ax = range(len(xtest))
+plt.scatter(x_ax, ytest, s=5, color="blue", label="original")
+plt.plot(x_ax, lasso.predict(xtest), lw=0.8, color="red", label="predicted (Lasso)")
+plt.legend()
+plt.show()
+
+
+
+
+
+
+#ENet
+
+
+#cross-validate to find the best-fitting alpha, using the train data - do so for varying L1/L2 ratios  
+#cv value was found to have no impact
+
+L = np.linspace(0.05,1,20)
+for j in range (0,len(L)):
+    enetcv = ElasticNetCV(l1_ratio = L[j], cv = 10, max_iter = 10000, normalize = True)
+    enetcv.fit(xtrain, ytrain)
+    a_e = enetcv.alpha_  #best fitting alpha
+
+
+    #use the best fitting alpha on the test data
+    enet = ElasticNet(alpha = a_e, normalize = True)
+    enet.fit(xtest, ytest) #fit the test data
+    mse_e = mean_squared_error(ytest, enet.predict(xtest))
+    rmse_e = mse_e**0.5
+    r2_e = enet.score(xtest, ytest)
+
+    print("L1/L2 ratio:", L[j], "     Best-fitting alpha for ENet=", a_e,"     ENet R^2 = ", r2_e) 
+#overall best result for L1/L2 = 0.2
+
+
+enetcv = ElasticNetCV(l1_ratio = 0.2, cv = 10, max_iter = 10000, normalize = True)
+enetcv.fit(xtrain, ytrain)
+a_e = enetcv.alpha_  #best fitting alpha
+
+
+#use the best fitting alpha on the test data
+enet = ElasticNet(alpha = a_e, normalize = True)
+enet.fit(xtest, ytest) #fit the test data
+mse_e = mean_squared_error(ytest, enet.predict(xtest))
+rmse_e = mse_e**0.5
+r2_e = enet.score(xtest, ytest)
+
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+print("Best-fitting alpha for ENet=", a_e, "     ENet R^2 = ", r2_e,"    ENet MSE = ", mse_e,   "    ENet RMSE = ", rmse_e  ) 
+
+
+x_ax = range(len(xtest))
+plt.scatter(x_ax, ytest, s=5, color="blue", label="original")
+plt.plot(x_ax, enet.predict(xtest), lw=0.8, color="red", label="predicted (Elastic Net)")
+plt.legend()
+plt.show()
