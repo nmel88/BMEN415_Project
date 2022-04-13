@@ -1,0 +1,120 @@
+#sources: 
+# https://www.projectpro.io/recipes/use-classification-and-regression-tree-in-python
+# https://machinelearningmastery.com/bagging-ensemble-with-python/
+# https://stackabuse.com/gradient-boosting-classifiers-in-python-with-scikit-learn/
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt  
+import seaborn as sns
+from sklearn import tree
+from sklearn.tree import  DecisionTreeClassifier
+from sklearn import metrics
+from sklearn.ensemble import BaggingClassifier, AdaBoostClassifier
+
+
+
+#importing data, assigning testing/training 
+train_data = pd.read_csv(r"C:\Users\rehak\Desktop\trainWP.csv")
+test_data = pd.read_csv(r"C:\Users\rehak\Desktop\testWP.csv")
+
+xtrain= train_data[train_data.columns[1:10]]
+ytrain= train_data.loc[:,'Potability']
+
+xtest= test_data[test_data.columns[1:10]]
+ytest= test_data.loc[:,'Potability']
+
+expectedy = ytest
+
+
+
+
+
+#CART
+
+cartmodel = DecisionTreeClassifier()       #worst model - it has a considerably low accuracy of ~61%
+cartmodel.fit(xtrain,ytrain)               #different inputs than the pre-sets into the functiondo not yield substantially different results
+print(cartmodel)
+
+predy = cartmodel.predict(xtest)
+
+print("Confusion matrix:")
+print(metrics.confusion_matrix(expectedy,predy))
+print("Accuracy:", metrics.accuracy_score(expectedy,predy))
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
+
+
+
+
+
+
+#(Adaptive) Boosting
+
+rate = [0.01 ,0.02,0.05,0.1,0.2,0.5,1,2,5]
+num = [1,2,5,10,20,50,100,200]
+
+#for i in range (0, len(rate)):
+ #   for j in range (0, len(num)):      
+  #      boostmodel = AdaBoostClassifier(n_estimators=num[j], learning_rate=rate[i])      
+  #      #number of estimators nor the rate matter - use a suitable option, like learning rate = 1 and n_estimators = 1, accuracy of ~65%
+   #     boostmodel.fit(xtrain,ytrain)
+    #    print(boostmodel)
+
+     #   predy = boostmodel.predict(xtest)
+
+       # print("Confusion matrix:")
+       # print(metrics.confusion_matrix(expectedy,predy))
+       # print("Accuracy:", metrics.accuracy_score(expectedy,predy))
+       # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
+#best result at rate = 0.1, n_estimators = 100
+
+boostmodel = AdaBoostClassifier(n_estimators=100, learning_rate=0.1)      
+#number of estimators nor the rate matter - use a suitable option, like learning rate = 1 and n_estimators = 1, accuracy of ~65%
+boostmodel.fit(xtrain,ytrain)
+print(boostmodel)
+
+predy = boostmodel.predict(xtest)
+
+print("Confusion matrix:")
+print(metrics.confusion_matrix(expectedy,predy))
+print("Accuracy:", metrics.accuracy_score(expectedy,predy))
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
+
+
+
+
+
+
+
+#Bagged Trees
+
+num = [1,10,50,100,200]
+sam = [1,2,3,4,5]
+fea = [1,2,3,4,5]
+
+#for k in range (0, len(fea)-1):                
+ # for j in range (0, len(sam)):
+  # for i in range (0, len(num)):                                                                   
+   #      bagmodel = BaggingClassifier(n_estimators=num[i], max_samples = sam[j], max_features = fea[k])
+    #     bagmodel.fit(xtrain,ytrain)
+     #    print(bagmodel)
+      #   predy = bagmodel.predict(xtest)
+
+      #   print("Accuracy:", metrics.accuracy_score(expectedy,predy))
+       #   print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
+
+#best results consistentlly at around 2 features, 3 samples, 100 estimators
+
+bagmodel = BaggingClassifier(n_estimators=100, max_samples = 3, max_features = 2)
+bagmodel.fit(xtrain,ytrain)
+print(bagmodel)
+predy = bagmodel.predict(xtest)
+
+print("Confusion matrix:")
+print(metrics.confusion_matrix(expectedy,predy))
+print("Accuracy:", metrics.accuracy_score(expectedy,predy))
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
